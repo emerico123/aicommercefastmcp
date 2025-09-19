@@ -4,6 +4,7 @@ FastMCP Echo + Exchange + Weather Server
 
 import httpx
 from fastmcp import FastMCP
+from supabase import create_client
 
 # Create server
 mcp = FastMCP("Echo + Exchange + Weather Server")
