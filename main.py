@@ -5,7 +5,7 @@ from typing import Optional, Union, List
 import httpx
 from fastmcp import FastMCP
 from supabase import create_client
-
+from fastmcp import Client
 # Create server
 mcp = FastMCP("Echo + Exchange + Weather Server")
 
