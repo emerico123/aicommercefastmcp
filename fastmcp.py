@@ -3,22 +3,32 @@ FastMCP Echo + Exchange + Weather Server
 """
 
 import os
-import numpy as np
-import openai
+import httpx
+from typing import List, Optional
 from fastmcp import FastMCP
-from supabase import create_client
-from typing import List
+from supabase import create_client, Client
 
- 
-# Create server
+# ------------------------
+# Load Environment Variables
+# ------------------------
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# ------------------------
+# Validate Supabase Credentials
+# ------------------------
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_KEY in environment variables.")
+
+# ------------------------
+# Initialize FastMCP and Supabase
+# ------------------------
 mcp = FastMCP("Echo + Exchange + Weather Server")
-
-# Initialize Supabase client (use your env vars or config here)
-SUPABASE_URL = "https://wanmahanxxzwpopilhrl.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhbm1haGFueHh6d3BvcGlsaHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0OTMzMDksImV4cCI6MjA3MzA2OTMwOX0.fyX3pVNXWzKlMFmRwyABq-r4FtwDkC4oqBNr2C21qPg"
-
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ------------------------
+# Product Info Tool
+# ------------------------
 
 @mcp.tool
 async def get_product_info(user_id: str, name: Optional[str] = None) -> List[dict]:
@@ -101,7 +111,7 @@ async def get_exchange_rate(source_currency: str, destination_currency: str, amo
         try:
             response = await client.get(FRANKFURTER_URL, params=params, timeout=10)
             response.raise_for_status()
-            data = response.json()
+            data = await response.json()
 
             rate = data["rates"].get(destination_currency.upper())
             if rate is None:
@@ -143,7 +153,7 @@ async def get_weather(latitude: float, longitude: float) -> dict:
         try:
             response = await client.get(OPEN_METEO_URL, params=params, timeout=10)
             response.raise_for_status()
-            data = response.json()
+            data = await response.json()
 
             if "current_weather" not in data:
                 return {"error": "No weather data available."}
