@@ -1,5 +1,5 @@
 """
-FastMCP Cloud: Echo + Exchange + Weather + Product Info Server
+FastMCP Cloud: Product Info Server
 """
 
 import os
@@ -11,7 +11,7 @@ from supabase import create_client, Client
 # ------------------------
 # Initialize FastMCP
 # ------------------------
-mcp = FastMCP("Echo + Exchange + Weather Server")
+mcp = FastMCP("Product Info Server")
 
 # ------------------------
 # Supabase Configuration (From FastMCP Cloud Env Vars)
@@ -67,79 +67,3 @@ async def get_product_info(user_id: str, name: Optional[str] = None) -> List[dic
 
     except Exception as e:
         return [{"error": f"Error retrieving product info: {str(e)}"}]
-
-# ------------------------
-# Currency Exchange Tool
-# ------------------------
-
-FRANKFURTER_URL = "https://api.frankfurter.app/latest"
-
-@mcp.tool
-async def get_exchange_rate(source_currency: str, destination_currency: str, amount: float = 1.0) -> dict:
-    """
-    Convert amount from one currency to another using Frankfurter API.
-    """
-    params = {
-        "from": source_currency.upper(),
-        "to": destination_currency.upper()
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(FRANKFURTER_URL, params=params, timeout=10)
-            response.raise_for_status()
-            data = await response.json()
-
-            rate = data["rates"].get(destination_currency.upper())
-            if rate is None:
-                return {"error": "Invalid or unsupported currency code."}
-
-            return {
-                "from": source_currency.upper(),
-                "to": destination_currency.upper(),
-                "amount": amount,
-                "rate": rate,
-                "converted": round(rate * amount, 4),
-                "date": data.get("date")
-            }
-
-        except Exception as e:
-            return {"error": f"Currency conversion failed: {e}"}
-
-# ------------------------
-# Weather Tool
-# ------------------------
-
-OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
-
-@mcp.tool
-async def get_weather(latitude: float, longitude: float) -> dict:
-    """
-    Get current weather for a given latitude and longitude.
-    """
-    params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "current_weather": True
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(OPEN_METEO_URL, params=params, timeout=10)
-            response.raise_for_status()
-            data = await response.json()
-
-            if "current_weather" not in data:
-                return {"error": "No weather data available."}
-
-            weather = data["current_weather"]
-            return {
-                "temperature": weather.get("temperature"),
-                "windspeed": weather.get("windspeed"),
-                "winddirection": weather.get("winddirection"),
-                "weathercode": weather.get("weathercode"),
-                "time": weather.get("time")
-            }
-
-        except Exception as e:
-            return {"error": f"Weather fetch failed: {e}"}
