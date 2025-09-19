@@ -115,3 +115,70 @@ async def get_weather(latitude: float, longitude: float) -> dict:
 
         except Exception as e:
             return {"error": f"Failed to fetch weather: {e}"}
+
+
+SUPABASE_URL = "https://wanmahanxxzwpopilhrl.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhbm1haGFueHh6d3BvcGlsaHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0OTMzMDksImV4cCI6MjA3MzA2OTMwOX0.fyX3pVNXWzKlMFmRwyABq-r4FtwDkC4oqBNr2C21qPg"
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+@mcp.tool
+async def get_product_info(user_id: str, name: Optional[str] = None) -> List[dict]:
+    """
+    Fetch product information (with images and videos) for a specific user.
+
+    Args:
+        user_id (str): ID of the user/merchant to filter their products.
+        name (Optional[str]): Optional name filter for the product (case-insensitive).
+
+    Returns:
+        List[dict]: List of product info dicts with name, description, price, images, and videos.
+    """
+    try:
+        query = supabase.table("products").select("*").eq("user_id", user_id)
+
+        if name:
+            query = query.ilike("name", f"%{name}%")
+
+        products_response = query.execute()
+
+        if not products_response.data:
+            return []
+
+        results = []
+        for product in products_response.data:
+            product_id = product["id"]
+
+            try:
+                media_response = supabase.table("product_media") \
+                    .select("path, type") \
+                    .eq("product_id", product_id) \
+                    .execute()
+
+                images = []
+                videos = []
+                if media_response.data:
+                    for media in media_response.data:
+                        if media["type"] == 0:
+                            images.append(media["path"])
+                        elif media["type"] == 1:
+                            videos.append(media["path"])
+            except Exception as media_err:
+                print(f"Error retrieving media for product {product_id}: {media_err}")
+                images = []
+                videos = []
+
+            product_info = {
+                "name": product["name"],
+                "description": product.get("description", "No description"),
+                "price": product.get("price", "N/A"),
+                "images": images,
+                "videos": videos
+            }
+            results.append(product_info)
+
+        return results
+
+    except Exception as e:
+        print(f"Error retrieving product info: {e}")
+        return []
