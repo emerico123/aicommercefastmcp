@@ -1,7 +1,7 @@
 """
 FastMCP Echo + Exchange + Weather Server
 """
-
+from typing import Optional, Union, List
 import httpx
 from fastmcp import FastMCP
 from supabase import create_client
